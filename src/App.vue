@@ -1,7 +1,7 @@
 <script setup>
 
 import { shuffle, timeToString, transpose } from './utils';
-import { ref, computed, onMounted, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import VueDatePicker from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css'
 import Sheet from "./components/Sheet.vue";
@@ -59,8 +59,6 @@ const onGroupChange = (event) => {
   });
 };
 
-const onExamChange = (event) => selectedExam.value = exams.value.find((exam) => exam.id === parseInt(event.target.value));
-
 const selectAllStudents = (newState) => selectedStudents.value.forEach((student) => student.selected = newState);
 
 const shuffleStudents = () => shuffledStudents.value = shuffle(selectedStudents.value.filter((student) => student.selected));
@@ -74,6 +72,26 @@ const triggerHandlePrint = () => {
   });
   handlePrint();
 };
+
+const updateExam = () => {
+  // Update the exam record with the room and date
+  grist.docApi.applyUserActions([
+      ['UpdateRecord', 'Exams', selectedExam.value.id, {
+        'Room': selectedRoom.value.id,
+        'Date': startDate.value,
+        // 'Durée': timeToString(duration.hours, duration.minutes),
+      }]
+  ]);
+
+  // Add a Note record for each student
+  const action = shuffledStudents.value.map((student) => ['AddRecord', 'Grades', null, {
+    'Exam': selectedExam.value.id,
+    'Eleve': student.id,
+    'Note': null,
+  }]);
+  console.log(action);
+  grist.docApi.applyUserActions(action);
+}
 
 </script>
 
@@ -142,6 +160,8 @@ const triggerHandlePrint = () => {
     </div>
 
     <div style="margin: 10px;">
+      <button @click="updateExam">Update !</button>
+      <span style="margin: 5px;"></span>
       <button @click="triggerHandlePrint">Print !</button>
     </div>
   </div>
