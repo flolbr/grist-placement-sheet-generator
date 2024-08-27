@@ -40,7 +40,7 @@ onMounted(() => {
 });
 
 
-grist.onRecords((records) => exams.value = records);
+grist.onRecord((record) => selectedExam.value = record);
 
 const onRoomChange = (event) => selectedRoom.value = rooms.value.find((room) => room.id === parseInt(event.target.value));
 
@@ -67,10 +67,13 @@ const shuffleStudents = () => shuffledStudents.value = shuffle(selectedStudents.
 
 watch(selectedStudents, (_) => shuffleStudents(), {deep: true});
 
-const {handlePrint} = useVueToPrint({
-  content: () => sheet.value,
-  documentTitle: `Feuille de placement - ${examName.value} - ${startTime.value}`,
-});
+const triggerHandlePrint = () => {
+  const {handlePrint} = useVueToPrint({
+    content: () => sheet.value,
+    documentTitle: `Feuille de placement - ${examName.value} - ${startDate.value.toLocaleDateString('fr-FR')} - ${startTime.value}`,
+  });
+  handlePrint();
+};
 
 </script>
 
@@ -99,10 +102,7 @@ const {handlePrint} = useVueToPrint({
       </select>
       <br>
       <label for="exam">Exam:</label>
-      <select @change="onExamChange" name="exam">
-        <option disabled value="" selected>Select an exam</option>
-        <option v-for="exam in exams" :key="exam.id" :value="exam.id">{{ exam.fullname }}</option>
-      </select>
+      {{ selectedExam.fullname }}
       <br>
     </div>
 
@@ -142,7 +142,7 @@ const {handlePrint} = useVueToPrint({
     </div>
 
     <div style="margin: 10px;">
-      <button @click="handlePrint">Print !</button>
+      <button @click="triggerHandlePrint">Print !</button>
     </div>
   </div>
 </template>
