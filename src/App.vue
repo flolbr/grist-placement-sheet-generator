@@ -68,7 +68,7 @@ watch(selectedStudents, (_) => shuffleStudents(), {deep: true});
 const triggerHandlePrint = () => {
   const {handlePrint} = useVueToPrint({
     content: () => sheet.value,
-    documentTitle: `Feuille de placement - ${examName.value} - ${startDate.value.toLocaleDateString('fr-FR')} - ${startTime.value}`,
+    documentTitle: `Feuille de placement - ${examName.value} - ${startDate.value.toISOString().split('T')[0]} - ${startTime.value}`,
   });
   handlePrint();
 };
@@ -76,11 +76,11 @@ const triggerHandlePrint = () => {
 const updateExam = () => {
   // Update the exam record with the room and date
   grist.docApi.applyUserActions([
-      ['UpdateRecord', 'Exams', selectedExam.value.id, {
-        'Room': selectedRoom.value.id,
-        'Date': startDate.value,
-        // 'Durée': timeToString(duration.hours, duration.minutes),
-      }]
+    ['UpdateRecord', 'Exams', selectedExam.value.id, {
+      'Room': selectedRoom.value.id,
+      'Date': startDate.value,
+      // 'Durée': timeToString(duration.hours, duration.minutes),
+    }]
   ]);
 
   // Add a Note record for each student

@@ -77,6 +77,9 @@ const {duration} = defineProps({
   width: 21cm;
   height: 29.7cm;
   border: 1px solid #000;
+  @media print {
+    border: none;
+  }
 }
 
 .container {
