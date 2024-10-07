@@ -17,6 +17,7 @@ const rooms = ref([]);
 
 const selectedStudents = ref([]);
 const shuffledStudents = ref([]);
+let filteredStudents = [];
 const selectedExam = ref({});
 const selectedRoom = ref({});
 
@@ -61,7 +62,10 @@ const onGroupChange = (event) => {
 
 const selectAllStudents = (newState) => selectedStudents.value.forEach((student) => student.selected = newState);
 
-const shuffleStudents = () => shuffledStudents.value = shuffle(selectedStudents.value.filter((student) => student.selected));
+const shuffleStudents = () => {
+  filteredStudents = selectedStudents.value.filter((student) => student.selected);
+  return shuffledStudents.value = shuffle(filteredStudents);
+};
 
 watch(selectedStudents, (_) => shuffleStudents(), {deep: true});
 
