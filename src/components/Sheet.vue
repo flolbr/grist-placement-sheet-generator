@@ -52,14 +52,16 @@ const {duration} = defineProps({
             <th>ID</th>
             <th>Nom</th>
             <th>Prénom</th>
+            <th style="width: 150px">Signature</th>
           </tr>
           </thead>
           <tbody>
           <tr v-for="(student, place) in students" :key="student.id">
             <td class="center-cell">{{ place + 1 }}</td>
             <td class="center-cell">{{ student.id2 }}</td>
-            <td style="text-align:left;">{{ student.lastname }}</td>
-            <td style="text-align:left;">{{ student.firstname }}</td>
+            <td style="text-align:left; text-overflow: ''">{{ student.lastname }}</td>
+            <td style="text-align:left; text-overflow: ''">{{ student.firstname }}</td>
+            <td></td>
           </tr>
           </tbody>
         </table>
