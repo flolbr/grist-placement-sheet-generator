@@ -52,15 +52,15 @@ const {duration} = defineProps({
             <th>ID</th>
             <th>Nom</th>
             <th>Prénom</th>
-            <th style="width: 150px">Signature</th>
+            <th style="width: 120px">Signature</th>
           </tr>
           </thead>
           <tbody>
           <tr v-for="(student, place) in students" :key="student.id">
             <td class="center-cell">{{ place + 1 }}</td>
             <td class="center-cell">{{ student.id2 }}</td>
-            <td style="text-align:left; text-overflow: ''">{{ student.lastname }}</td>
-            <td style="text-align:left; text-overflow: ''">{{ student.firstname }}</td>
+            <td class="td-name">{{ student.lastname }}</td>
+            <td class="td-name">{{ student.firstname }}</td>
             <td></td>
           </tr>
           </tbody>
@@ -79,9 +79,16 @@ const {duration} = defineProps({
   width: 21cm;
   height: 29.7cm;
   border: 1px solid #000;
+  overflow: scroll;
   @media print {
     border: none;
+    padding: 0;
+    overflow: unset;
   }
+}
+
+@page {
+  margin: 0.5in;
 }
 
 .container {
@@ -116,6 +123,14 @@ const {duration} = defineProps({
   td {
     border-left: 1px solid black;
     border-right: 1px solid black;
+  }
+
+  .td-name {
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    max-width: 200px; /* Adjust the max-width as needed */
+    word-break: keep-all;
   }
 
   tr:nth-child(even) {
