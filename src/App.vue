@@ -46,17 +46,23 @@ grist.onRecord((record) => selectedExam.value = record);
 const onRoomChange = (event) => selectedRoom.value = rooms.value.find((room) => room.id === parseInt(event.target.value));
 
 const onGroupChange = (event) => {
-  const selectedGroup = event.target.value;
-  console.log(selectedGroup);
+  const selectedGroup = parseInt(event.target.value);
+  console.log('Selected group', selectedGroup);
 
   // Get the Students from the selected group
   grist.docApi.fetchTable('Students').then((students) => {
     console.log(students);
     students = transpose(students);
-    selectedStudents.value = students.filter((student) => selectedGroup in student.groups);
+    selectedStudents.value = students.filter((student) => student.groups.includes(selectedGroup));
     // add a selected property to each student
-    selectedStudents.value.forEach((student) => student.selected = true);
+    selectedStudents.value.forEach((student) => {
+      student.selected = true;
+      student.seat = '';
+      student.fixed = false;
+    });
     console.log(selectedStudents.value);
+
+    shuffleStudents()
   });
 };
 
