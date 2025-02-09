@@ -18,8 +18,8 @@ const {duration} = defineProps({
 <template>
   <div id="page">
     <div class="container">
-      <h2>Feuille de placement</h2>
-      <h3>{{ examName }}</h3>
+      <h2>{{ examName }}</h2>
+      <h3>Feuille de placement</h3>
 
       <div>
         <table class="header-table">
@@ -41,8 +41,6 @@ const {duration} = defineProps({
           </tr>
         </table>
       </div>
-      <br>
-      <br>
       <br>
       <div>
         <table class="students-table">
@@ -135,6 +133,10 @@ const {duration} = defineProps({
 
   tr:nth-child(even) {
     background-color: #f9f9f9;
+  }
+
+  h2, h3 {
+    margin-top: 0;
   }
 }
 

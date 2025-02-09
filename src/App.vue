@@ -60,14 +60,59 @@ const onGroupChange = (event) => {
   });
 };
 
-const selectAllStudents = (newState) => selectedStudents.value.forEach((student) => student.selected = newState);
+function recomputeSeats() {
+  // Recompute the seat numbers
+  shuffledStudents.value.forEach((student, index) => student.seat = index + 1);
+  console.log('New order', shuffledStudents.value.map((student) => student.lastname));
+}
 
-const shuffleStudents = () => {
-  filteredStudents = selectedStudents.value.filter((student) => student.selected);
-  return shuffledStudents.value = shuffle(filteredStudents);
+const selectAllStudents = (newState) => {
+  selectedStudents.value.forEach((student) => student.selected = newState);
+  shuffleStudents();
 };
 
-watch(selectedStudents, (_) => shuffleStudents(), {deep: true});
+const shuffleStudents = () => {
+  console.log('==> Shuffling students');
+  // Update the selected students list
+  filteredStudents = selectedStudents.value.filter((student) => {
+    if (!student.selected) {
+      student.seat = '';
+      return false;
+    } else {
+      return true;
+    }
+  });
+  const fixed = filteredStudents.filter((student) => student.fixed);
+  const shuffled = shuffle(filteredStudents.filter((student) => !student.fixed));
+  // inject the fixed students back into the shuffled list at their fixed seat
+  fixed.forEach((student) => shuffled.splice(student.seat - 1, 0, student));
+  shuffledStudents.value = shuffled;
+  recomputeSeats();
+};
+
+/*
+ * Handle the splicing of the selected students when the seat is manually changed
+ */
+const changeSeat = (id, event) => {
+  const newSeat = parseInt(event.target.value);
+  if (!newSeat) return;
+  console.log('changeSeat triggered for', id);
+  const student = shuffledStudents.value.find((student) => student.id2 === id);
+  student.fixed = true;
+  const index = shuffledStudents.value.indexOf(student);
+
+  // Move the student to the new seat
+  shuffledStudents.value.splice(index, 1);
+  shuffledStudents.value.splice(newSeat - 1, 0, student);
+
+  recomputeSeats();
+};
+
+const updateSelected = (student, event) => {
+  student.selected = event.target.checked;
+
+  shuffleStudents();
+};
 
 const triggerHandlePrint = () => {
   const {handlePrint} = useVueToPrint({
@@ -142,14 +187,18 @@ const updateExam = () => {
         <th>ID</th>
         <th>Last Name</th>
         <th>First Name</th>
+        <th>Seat</th>
+        <th>Fixed</th>
       </tr>
       </thead>
       <tbody>
       <tr v-for="student in selectedStudents" :key="student.id">
-        <td class="center-cell"><input type="checkbox" v-model="student.selected"/></td>
+        <td class="center-cell"><input type="checkbox" :checked="student.selected" @click="updateSelected(student, $event)"/></td>
         <td>{{ student.id2 }}</td>
         <td style="text-align:left;">{{ student.lastname }}</td>
         <td style="text-align:left;">{{ student.firstname }}</td>
+        <td><input type="number" style="width: 35px" @input="changeSeat(student.id2, $event)" :value="student.seat" /></td>
+        <td class="center-cell"><input type="checkbox" v-model="student.fixed"/></td>
       </tr>
       </tbody>
     </table>
