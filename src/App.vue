@@ -154,11 +154,11 @@ const updateExam = () => {
   <div>
     <div>
       <label for="startDate">Start Date:</label>
-      <VueDatePicker v-model="startDate" time-picker-inline minutes-grid-increment="15"/>
+      <VueDatePicker locale="fr" v-model="startDate" time-picker-inline minutes-grid-increment="15"/>
     </div>
     <div>
       <label for="startDate">Duration:</label>
-      <VueDatePicker v-model="duration" time-picker/>
+      <VueDatePicker locale="fr" v-model="duration" time-picker/>
     </div>
     <div>
       <label for="room">Room:</label>
