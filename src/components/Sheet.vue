@@ -89,6 +89,10 @@ const {duration} = defineProps({
   margin: 0.5in;
 }
 
+h2, h3 {
+  margin-top: 0;
+}
+
 .container {
   margin: 0 auto;
 }
@@ -133,10 +137,6 @@ const {duration} = defineProps({
 
   tr:nth-child(even) {
     background-color: #f9f9f9;
-  }
-
-  h2, h3 {
-    margin-top: 0;
   }
 }
 
