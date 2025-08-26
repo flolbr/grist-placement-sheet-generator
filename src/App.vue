@@ -1,7 +1,7 @@
 <script setup>
 
 import { shuffle, timeToString, transpose } from './utils';
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref } from "vue";
 import VueDatePicker from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css'
 import Sheet from "./components/Sheet.vue";
@@ -12,7 +12,6 @@ grist.ready();
 console.log('script setup');
 
 const groups = ref([]);
-const exams = ref([]);
 const rooms = ref([]);
 
 const selectedStudents = ref([]);
@@ -43,15 +42,17 @@ onMounted(() => {
 
 grist.onRecord((record) => selectedExam.value = record);
 
-const onRoomChange = (event) => selectedRoom.value = rooms.value.find((room) => room.id === parseInt(event.target.value));
+const selectedGroupId = ref("");
+const selectedRoomId = ref("");
 
-const onGroupChange = (event) => {
-  const selectedGroup = parseInt(event.target.value);
+const onRoomChange = () => selectedRoom.value = rooms.value.find((room) => room.id === parseInt(selectedRoomId.value));
+
+const onGroupChange = () => {
+  const selectedGroup = parseInt(selectedGroupId.value);
   console.log('Selected group', selectedGroup);
-
   // Get the Students from the selected group
   grist.docApi.fetchTable('Students').then((students) => {
-    console.log(students);
+    // console.log(students);
     students = transpose(students);
     selectedStudents.value = students.filter((student) => student.groups.includes(selectedGroup));
     // add a selected property to each student
@@ -60,13 +61,13 @@ const onGroupChange = (event) => {
       student.seat = '';
       student.fixed = false;
     });
-    console.log(selectedStudents.value);
+    // console.log(selectedStudents.value);
 
     shuffleStudents()
   });
 };
 
-function recomputeSeats() {
+const recomputeSeats = () => {
   // Recompute the seat numbers
   shuffledStudents.value.forEach((student, index) => student.seat = index + 1);
   console.log('New order', shuffledStudents.value.map((student) => student.lastname));
@@ -148,10 +149,22 @@ const updateExam = () => {
   grist.docApi.applyUserActions(action);
 }
 
+const resetAll = () => {
+  selectedStudents.value = [];
+  shuffledStudents.value = [];
+  filteredStudents = [];
+  selectedRoom.value = {};
+  selectedGroupId.value = "";
+  selectedRoomId.value = "";
+  startDate.value = new Date();
+  duration.value = { hours: 2, minutes: 0 };
+};
+
 </script>
 
 <template>
   <div>
+    <button @click="resetAll" style="margin-bottom: 16px;">Reset</button>
     <div>
       <label for="startDate">Start Date:</label>
       <VueDatePicker locale="fr" v-model="startDate" time-picker-inline minutes-grid-increment="15"/>
@@ -162,15 +175,15 @@ const updateExam = () => {
     </div>
     <div>
       <label for="room">Room:</label>
-      <select @change="onRoomChange" name="room">
-        <option disabled value="" selected>Select a room</option>
+      <select v-model="selectedRoomId" @change="onRoomChange" name="room">
+        <option disabled value="">Select a room</option>
         <option v-for="room in rooms" :key="room.id" :value="room.id">{{ room.fullname }}</option>
       </select>
       <br>
       <!-- Select element from the groups, call onGroupChange when the selection changes -->
       <label for="group">Group:</label>
-      <select @change="onGroupChange" name="group">
-        <option disabled value="" selected>Select a group</option>
+      <select v-model="selectedGroupId" @change="onGroupChange" name="group">
+        <option disabled value="">Select a group</option>
         <option v-for="group in groups" :key="group.id" :value="group.id">{{ group.code }}</option>
       </select>
       <br>
