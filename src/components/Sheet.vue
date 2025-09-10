@@ -19,7 +19,7 @@ const {duration} = defineProps({
   <div id="page">
     <div class="container">
       <h2>{{ examName }}</h2>
-      <h3>Feuille de placement</h3>
+      <!--<h3>Feuille de placement</h3>-->
 
       <div>
         <table class="header-table">
