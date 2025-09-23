@@ -55,6 +55,8 @@ const onGroupChange = () => {
     // console.log(students);
     students = transpose(students);
     selectedStudents.value = students.filter((student) => student.groups.includes(selectedGroup));
+    // sort by last name
+    selectedStudents.value.sort((a, b) => a.lastname.localeCompare(b.lastname));
     // add a selected property to each student
     selectedStudents.value.forEach((student) => {
       student.selected = true;
