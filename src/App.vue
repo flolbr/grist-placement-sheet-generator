@@ -80,6 +80,11 @@ const selectAllStudents = (newState) => {
   shuffleStudents();
 };
 
+const invertSelectedStudents = () => {
+  selectedStudents.value.forEach((student) => student.selected = !student.selected);
+  shuffleStudents();
+};
+
 const shuffleStudents = () => {
   console.log('==> Shuffling students');
   // Update the selected students list
@@ -198,7 +203,8 @@ const resetAll = () => {
 
     <div>
       <a @click="selectAllStudents(true)">Select All</a> /
-      <a @click="selectAllStudents(false)">Deselect All</a>
+      <a @click="selectAllStudents(false)">Deselect All</a> /
+      <a @click="invertSelectedStudents()">Invert Selection</a>
     </div>
 
     <table>
