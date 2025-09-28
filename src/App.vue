@@ -6,6 +6,7 @@ import VueDatePicker from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css'
 import Sheet from "./components/Sheet.vue";
 import { useVueToPrint } from "vue-to-print";
+import rangeParser from "parse-numeric-range";
 
 grist.ready();
 
@@ -44,6 +45,7 @@ grist.onRecord((record) => selectedExam.value = record);
 
 const selectedGroupId = ref("");
 const selectedRoomId = ref("");
+const studentsRangeInput = ref("");
 
 const onRoomChange = () => selectedRoom.value = rooms.value.find((room) => room.id === parseInt(selectedRoomId.value));
 
@@ -69,9 +71,19 @@ const onGroupChange = () => {
   });
 };
 
+const seatsRange = computed(() => {
+  console.log('Computing seatsRange from input', studentsRangeInput.value);
+  // Default range is 1 to number of selected students
+  const defaultRange = Array.from({ length: selectedStudents.value.length }, (_, i) => i + 1);
+  if (!studentsRangeInput.value) return defaultRange;
+  const parsed = rangeParser(studentsRangeInput.value);
+  // If the parsed range is smaller than the number of selected students, return the default range
+  return parsed.length < selectedStudents.value.length ? defaultRange : parsed;
+});
+
 const recomputeSeats = () => {
   // Recompute the seat numbers
-  shuffledStudents.value.forEach((student, index) => student.seat = index + 1);
+  shuffledStudents.value.forEach((student, index) => student.seat = seatsRange.value[index]);
   console.log('New order', shuffledStudents.value.map((student) => student.lastname));
 }
 
@@ -157,6 +169,7 @@ const updateExam = () => {
 }
 
 const resetAll = () => {
+  studentsRangeInput.value = "";
   selectedStudents.value = [];
   shuffledStudents.value = [];
   filteredStudents = [];
@@ -201,6 +214,11 @@ const resetAll = () => {
 
     <hr style="margin: 20px;">
 
+    <div>
+      Seat range: <input type="text" v-model="studentsRangeInput" style="width: 200px;" @change="recomputeSeats" />
+      <br>
+      <em>(You can use a range like "1-10,12,14-16", default is "1-&lt;number of students&gt;")</em>
+    </div>
     <div>
       <a @click="selectAllStudents(true)">Select All</a> /
       <a @click="selectAllStudents(false)">Deselect All</a> /

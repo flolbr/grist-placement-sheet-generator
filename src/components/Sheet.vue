@@ -54,8 +54,8 @@ const {duration} = defineProps({
           </tr>
           </thead>
           <tbody>
-          <tr v-for="(student, place) in students" :key="student.id">
-            <td class="center-cell">{{ place + 1 }}</td>
+          <tr v-for="student in students" :key="student.id">
+            <td class="center-cell">{{ student.seat }}</td>
             <td class="center-cell">{{ student.id2 }}</td>
             <td class="td-name">{{ student.lastname }}</td>
             <td class="td-name">{{ student.firstname }}</td>
