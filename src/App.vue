@@ -162,7 +162,7 @@ const updateExam = () => {
   const action = shuffledStudents.value.map((student) => ['AddRecord', 'Grades', null, {
     'Exam': selectedExam.value.id,
     'Eleve': student.id,
-    'Note': null,
+    'Note_Originale': null,
   }]);
   console.log(action);
   grist.docApi.applyUserActions(action);
