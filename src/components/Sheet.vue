@@ -3,13 +3,13 @@
 import { defineProps } from "vue";
 import { timeToString } from "../utils.js";
 
-const {duration} = defineProps({
-  students: Array,
-  examName: String,
-  room: Object,
-  startDate: Date,
-  startTime: String,
-  duration: Object,
+const props = defineProps({
+  students: { type: Array, default: () => [] },
+  examName: { type: String, default: '' },
+  room: { type: Object, default: null },
+  startDate: { type: Date, default: null },
+  startTime: { type: String, default: '' },
+  duration: { type: Object, default: null },
 });
 
 
@@ -25,19 +25,19 @@ const {duration} = defineProps({
         <table class="header-table">
           <tr>
             <td>Date</td>
-            <td>{{ startDate.toLocaleDateString('fr-FR') }}</td>
+            <td>{{ props.startDate ? props.startDate.toLocaleDateString('fr-FR') : '' }}</td>
           </tr>
           <tr>
             <td>Heure</td>
-            <td>{{ startTime }}</td>
+            <td>{{ props.startTime }}</td>
           </tr>
           <tr>
             <td>Durée</td>
-            <td>{{ timeToString(duration.hours, duration.minutes) }}</td>
+            <td>{{ props.duration ? timeToString(props.duration.hours, props.duration.minutes) : '' }}</td>
           </tr>
           <tr>
             <td>Salle</td>
-            <td>{{ room.fullname }}</td>
+            <td>{{ props.room?.fullname || '' }}</td>
           </tr>
         </table>
       </div>
@@ -54,7 +54,7 @@ const {duration} = defineProps({
           </tr>
           </thead>
           <tbody>
-          <tr v-for="student in students" :key="student.id">
+          <tr v-for="student in props.students" :key="student.id">
             <td class="center-cell">{{ student.seat }}</td>
             <td class="center-cell">{{ student.id2 }}</td>
             <td class="td-name">{{ student.lastname }}</td>

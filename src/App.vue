@@ -1,6 +1,15 @@
 <script setup>
 
-import { shuffle, timeToString, transpose } from './utils';
+import {
+  dateToGristDateTime,
+  durationToMinutes,
+  durationToParts,
+  gristDateToDate,
+  gristRefId,
+  shuffle,
+  timeToString,
+  transpose,
+} from './utils';
 import { computed, onMounted, ref } from "vue";
 import VueDatePicker from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css'
@@ -8,55 +17,133 @@ import Sheet from "./components/Sheet.vue";
 import { useVueToPrint } from "vue-to-print";
 import rangeParser from "parse-numeric-range";
 
-grist.ready();
+grist.ready({ requiredAccess: 'full' });
 
 console.log('script setup');
 
 const groups = ref([]);
 const rooms = ref([]);
+const missingColumns = ref([]);
+
+const requiredColumns = [
+  'fullname',
+  'Matiere_Nom',
+  'Nom',
+  'Groupe',
+  'Room',
+  'Date',
+  'Duree',
+];
+
+const columnLabels = {
+  fullname: 'fullname',
+  Matiere_Nom: 'Matiere_Nom',
+  Nom: 'Nom',
+  Groupe: 'Groupe',
+  Room: 'Room',
+  Date: 'Date',
+  Duree: 'Duree (minutes)',
+};
 
 const selectedStudents = ref([]);
 const shuffledStudents = ref([]);
 let filteredStudents = [];
-const selectedExam = ref({});
-const selectedRoom = ref({});
+const selectedExam = ref(null);
+const selectedRoom = ref(null);
 
-const startDate = ref(new Date());
+const startDate = ref(null);
 
-const duration = ref({
-  hours: 2,
-  minutes: 0,
-});
+const duration = ref(null);
 
 const sheet = ref();
 
-const examName = computed(() => `${selectedExam.value.Matiere_Nom} - ${selectedExam.value.Nom}`);
-const startTime = computed(() => timeToString(startDate.value.getHours(), startDate.value.getMinutes()));
+const examName = computed(() => {
+  if (!selectedExam.value) return '';
+  return [selectedExam.value.Matiere_Nom, selectedExam.value.Nom].filter(Boolean).join(' - ');
+});
+const startTime = computed(() => startDate.value
+  ? timeToString(startDate.value.getHours(), startDate.value.getMinutes())
+  : '');
 
-onMounted(() => {
+onMounted(async () => {
   console.log('mounted');
 
-  grist.docApi.fetchTable('Groups').then((fetchedGroups) => groups.value = transpose(fetchedGroups));
-  grist.docApi.fetchTable('Rooms').then((fetchedRooms) => rooms.value = transpose(fetchedRooms));
+  try {
+    const [fetchedGroups, fetchedRooms] = await Promise.all([
+      grist.docApi.fetchTable('Groups'),
+      grist.docApi.fetchTable('Rooms'),
+    ]);
+    groups.value = transpose(fetchedGroups);
+    rooms.value = transpose(fetchedRooms);
+    if (selectedExam.value) {
+      loadExamState(selectedExam.value);
+    }
+    onRoomChange();
+  } catch (error) {
+    console.error('Unable to load groups and rooms', error);
+  }
 });
 
+const loadExamState = (record) => {
+  if (!record) {
+    missingColumns.value = [];
+    selectedExam.value = null;
+    return false;
+  }
 
-grist.onRecord((record) => selectedExam.value = record);
+  missingColumns.value = requiredColumns.filter(
+    (column) => !Object.prototype.hasOwnProperty.call(record, column)
+  );
 
-const selectedGroupId = ref("");
-const selectedRoomId = ref("");
+  selectedExam.value = record;
+  if (missingColumns.value.length) {
+    selectedRoomId.value = null;
+    selectedGroupId.value = null;
+    selectedRoom.value = null;
+    selectedStudents.value = [];
+    shuffledStudents.value = [];
+    startDate.value = null;
+    duration.value = null;
+    return false;
+  }
+
+  selectedRoomId.value = resolveReferenceId(record.Room, rooms.value, 'fullname');
+  selectedGroupId.value = resolveReferenceId(record.Groupe, groups.value, 'code');
+  onRoomChange();
+  startDate.value = gristDateToDate(record.Date);
+  duration.value = durationToParts(record.Duree);
+  return true;
+};
+
+const selectedGroupId = ref(null);
+const selectedRoomId = ref(null);
 const studentsRangeInput = ref("");
 
-const onRoomChange = () => selectedRoom.value = rooms.value.find((room) => room.id === parseInt(selectedRoomId.value));
+const resolveReferenceId = (value, records, displayField) => {
+  const id = gristRefId(value);
+  if (id) return id;
+  if (value === null || value === undefined || value === '') return null;
+  return records.find((record) => record[displayField] === value)?.id || null;
+};
+
+const onRoomChange = () => {
+  selectedRoom.value = rooms.value.find((room) => room.id === selectedRoomId.value) || null;
+};
 
 const onGroupChange = () => {
-  const selectedGroup = parseInt(selectedGroupId.value);
+  const selectedGroup = selectedGroupId.value;
+  if (!Number.isInteger(selectedGroup)) {
+    selectedStudents.value = [];
+    shuffledStudents.value = [];
+    return;
+  }
   console.log('Selected group', selectedGroup);
   // Get the Students from the selected group
   grist.docApi.fetchTable('Students').then((students) => {
     // console.log(students);
     students = transpose(students);
-    selectedStudents.value = students.filter((student) => student.groups.includes(selectedGroup));
+    selectedStudents.value = students.filter((student) =>
+      Array.isArray(student.groups) && student.groups.includes(selectedGroup));
     // sort by last name
     selectedStudents.value.sort((a, b) => a.lastname.localeCompare(b.lastname));
     // add a selected property to each student
@@ -67,9 +154,13 @@ const onGroupChange = () => {
     });
     // console.log(selectedStudents.value);
 
-    shuffleStudents()
-  });
+    shuffleStudents();
+  }).catch((error) => console.error('Unable to load students', error));
 };
+
+grist.onRecord((record) => {
+  if (loadExamState(record)) onGroupChange();
+}, { expandRefs: false });
 
 const seatsRange = computed(() => {
   console.log('Computing seatsRange from input', studentsRangeInput.value);
@@ -143,18 +234,24 @@ const updateSelected = (student, event) => {
 const triggerHandlePrint = () => {
   const {handlePrint} = useVueToPrint({
     content: () => sheet.value,
-    documentTitle: `Feuille de placement - ${examName.value} - ${startDate.value.toISOString().split('T')[0]} - ${startTime.value}`,
+    documentTitle: `Feuille de placement - ${examName.value} - ${startDate.value?.toISOString().split('T')[0] || 'sans-date'} - ${startTime.value}`,
   });
   handlePrint();
 };
 
 const updateExam = () => {
-  // Update the exam record with the room and date
+  if (!selectedExam.value?.id) {
+    console.warn('Cannot update because no exam is selected');
+    return;
+  }
+
+  // Keep missing values missing when writing back to Grist.
   grist.docApi.applyUserActions([
     ['UpdateRecord', 'Exams', selectedExam.value.id, {
-      'Room': selectedRoom.value.id,
-      'Date': startDate.value,
-      // 'Durée': timeToString(duration.hours, duration.minutes),
+      'Groupe': selectedGroupId.value,
+      'Room': selectedRoom.value?.id ?? null,
+      'Date': dateToGristDateTime(startDate.value),
+      'Duree': durationToMinutes(duration.value),
     }]
   ]);
 
@@ -173,17 +270,26 @@ const resetAll = () => {
   selectedStudents.value = [];
   shuffledStudents.value = [];
   filteredStudents = [];
-  selectedRoom.value = {};
-  selectedGroupId.value = "";
-  selectedRoomId.value = "";
-  startDate.value = new Date();
-  duration.value = { hours: 2, minutes: 0 };
+  selectedExam.value = null;
+  selectedRoom.value = null;
+  selectedGroupId.value = null;
+  selectedRoomId.value = null;
+  startDate.value = null;
+  duration.value = null;
+  missingColumns.value = [];
 };
 
 </script>
 
 <template>
   <div>
+    <div v-if="missingColumns.length" class="configuration-error" role="alert">
+      <strong>Widget configuration incomplete</strong>
+      <div>Make these columns visible in the linked Exams table:</div>
+      <ul>
+        <li v-for="column in missingColumns" :key="column">{{ columnLabels[column] || column }}</li>
+      </ul>
+    </div>
     <button @click="resetAll" style="margin-bottom: 16px;">Reset</button>
     <div>
       <label for="startDate">Start Date:</label>
@@ -196,19 +302,19 @@ const resetAll = () => {
     <div>
       <label for="room">Room:</label>
       <select v-model="selectedRoomId" @change="onRoomChange" name="room">
-        <option disabled value="">Select a room</option>
+        <option disabled :value="null">Select a room</option>
         <option v-for="room in rooms" :key="room.id" :value="room.id">{{ room.fullname }}</option>
       </select>
       <br>
       <!-- Select element from the groups, call onGroupChange when the selection changes -->
       <label for="group">Group:</label>
       <select v-model="selectedGroupId" @change="onGroupChange" name="group">
-        <option disabled value="">Select a group</option>
+        <option disabled :value="null">Select a group</option>
         <option v-for="group in groups" :key="group.id" :value="group.id">{{ group.code }}</option>
       </select>
       <br>
       <label for="exam">Exam:</label>
-      {{ selectedExam.fullname }}
+      {{ selectedExam?.fullname || '' }}
       <br>
     </div>
 
@@ -279,6 +385,19 @@ const resetAll = () => {
 table {
   width: 100%;
   border-collapse: collapse;
+}
+
+.configuration-error {
+  margin-bottom: 16px;
+  padding: 12px;
+  border: 1px solid #c62828;
+  border-radius: 4px;
+  color: #8e0000;
+  background: #ffebee;
+}
+
+.configuration-error ul {
+  margin: 8px 0 0;
 }
 
 th, td {
